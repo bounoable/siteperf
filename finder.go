@@ -76,7 +76,7 @@ func (f *Finder) findUsed(ctx context.Context) ([]usedClass, error) {
 	browser := rod.New().Context(ctx).MustConnect()
 	defer browser.MustClose()
 
-	workers := int(math.Min(4, float64(runtime.NumCPU())))
+	workers := int(math.Min(8, float64(runtime.NumCPU())))
 	var wg sync.WaitGroup
 	wg.Add(workers)
 
@@ -114,25 +114,30 @@ func (f *Finder) findUsed(ctx context.Context) ([]usedClass, error) {
 					f.log.Debug("Visiting page", "url", pageUrl)
 
 					page := browser.MustPage(pageUrl)
+					cleanup := func() { page.MustClose() }
 
 					if err := page.WaitLoad(); err != nil {
+						cleanup()
 						f.log.Warn("Failed to load page", "url", pageUrl, "err", err)
 						continue
 					}
 
 					if err := page.WaitStable(100 * time.Millisecond); err != nil {
+						cleanup()
 						f.log.Warn("Failed to wait for page stability", "url", pageUrl, "err", err)
 						continue
 					}
 
 					pageClasses, err := f.extractClasses(page, pageUrl)
 					if err != nil {
+						cleanup()
 						f.log.Warn("Failed to extract classes", "url", pageUrl, "err", err)
 						continue
 					}
 
 					links, err := f.findLinks(page, pageUrl, &visited)
 					if err != nil {
+						cleanup()
 						f.log.Warn("Failed to find links", "url", pageUrl, "err", err)
 						continue
 					}
@@ -142,10 +147,13 @@ func (f *Finder) findUsed(ctx context.Context) ([]usedClass, error) {
 					for _, class := range pageClasses {
 						select {
 						case <-ctx.Done():
+							cleanup()
 							return
 						case classChan <- class:
 						}
 					}
+
+					cleanup()
 				}
 			}
 		}()
