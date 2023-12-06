@@ -6,6 +6,11 @@ import (
 	"slices"
 )
 
+// ExtractClassesFromFile reads the CSS file specified by the given path and
+// extracts a sorted list of unique class names found within it. If reading the
+// file fails, it returns an error. Otherwise, it returns a slice of class names
+// without leading dots and ensures that each class name is valid according to
+// CSS naming conventions.
 func ExtractClassesFromFile(path string) ([]string, error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
@@ -14,6 +19,10 @@ func ExtractClassesFromFile(path string) ([]string, error) {
 	return ExtractClasses(string(bytes))
 }
 
+// ExtractClasses extracts class names from a provided CSS string. It returns a
+// sorted, unique list of class names without the leading dot, ensuring that
+// each class name is valid according to CSS naming conventions. If any error
+// occurs during the extraction, an error is returned alongside an empty slice.
 func ExtractClasses(css string) ([]string, error) {
 	var classes []string
 	re := regexp.MustCompile(`\.[a-zA-Z0-9_-]+`)

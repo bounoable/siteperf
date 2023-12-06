@@ -17,12 +17,22 @@ import (
 	"github.com/gocolly/colly"
 )
 
+// Finder provides methods for locating unused CSS class names within a set of
+// web pages starting from a given root URL. It can traverse the pages up to a
+// specified limit and identify classes that are not in use, offering an
+// efficient way to clean up and optimize CSS resources. Finder supports
+// concurrent operations and respects the context provided for cancellation and
+// deadlines. It returns a slice of unused class names identified during the
+// search process.
 type Finder struct {
 	rootURL   *url.URL
 	pageLimit int
 	log       *slog.Logger
 }
 
+// New initializes a new Finder instance with the provided root URL and page
+// limit, returning the instance and any error encountered during its creation.
+// If the root URL is invalid, an error is returned.
 func New(rootURL string, pageLimit int) (*Finder, error) {
 	u, err := url.Parse(rootURL)
 	if err != nil {
@@ -35,6 +45,11 @@ func New(rootURL string, pageLimit int) (*Finder, error) {
 	}, nil
 }
 
+// FindUnused identifies which elements of the provided slice of class names are
+// not used within the scope of the [*Finder]'s root URL. It returns a slice
+// containing the unused class names and any error encountered during the
+// operation. The context parameter allows for cancellation and timeout control
+// over the process.
 func (f *Finder) FindUnused(ctx context.Context, classes []string) ([]string, error) {
 	usedChan, err := f.findUsed(ctx)
 	if err != nil {
